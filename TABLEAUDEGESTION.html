@@ -3,109 +3,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tableau de Bord GOLD - Outil de Gestion Privé</title>
+    <title>Dashboard GOLD - Gestion Autonome</title>
     <style>
-        body { font-family: 'Arial', sans-serif; background: #121212; color: #E0E0E0; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }
-        .container { max-width: 850px; margin: 30px auto; background: #1E1E1E; border-radius: 15px; padding: 40px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
-        h1 { color: #FF0000; font-size: 2.5em; margin-bottom: 20px; border-bottom: 3px solid #FFD700; padding-bottom: 10px; }
-        h2 { color: #FFD700; margin-top: 0; padding-bottom: 5px; font-size: 1.5em;}
-        p { color: #B0B0D0; }
-        .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 30px; }
-        .tool-card { background: #282828; padding: 25px; border-radius: 10px; text-align: left; border-left: 5px solid #FFD700; }
-        .tool-card a { display: block; background: #FF0000; color: white; padding: 12px 0; border: none; border-radius: 5px; text-decoration: none; font-weight: bold; margin-top: 15px; text-align: center; transition: background 0.3s; }
-        .tool-card a:hover { background: #cc0000; }
+        /* Styles Généraux */
+        body, html { margin: 0; padding: 0; min-height: 100vh; font-family: 'Arial', sans-serif; background: #121212; color: #E0E0E0; }
+        .secure-container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+        
+        /* En-tête et Infos Clés */
+        .header-bar { 
+            background: #1C1C2C; 
+            padding: 15px 30px; 
+            border-radius: 10px;
+            margin-bottom: 25px;
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        .title { color: #FF0000; font-weight: bold; font-size: 1.8em; }
+        .info-group { text-align: right; }
+        #current-date, #current-time { font-size: 1.1em; color: #FFD700; }
+        #monthly-code { font-size: 1.2em; color: #4CAF50; font-weight: bold; }
+
+        /* Grille des Outils et Indicateurs */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr; /* Gestion à gauche, Stock à droite */
+            gap: 25px;
+        }
+        .main-panel, .stock-panel { background: #1C1C2C; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); }
+        h2 { color: #FFD700; border-bottom: 2px solid #333; padding-bottom: 10px; margin-top: 0; }
+
+        /* Saisie de Données */
+        .input-group { margin-bottom: 15px; display: flex; align-items: center; }
+        .input-group label { width: 120px; color: #B0B0D0; font-weight: bold; text-align: left; margin-right: 10px; }
+        .input-group input { flex-grow: 1; padding: 10px; border-radius: 5px; border: 1px solid #333; background: #25253A; color: white; }
+
+        /* Bouton Sauvegarde */
+        #save-button {
+            width: 100%;
+            padding: 12px;
+            background: #4CAF50; /* Vert pour sauvegarder */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+        #save-button:hover { background: #388E3C; }
+
+        /* Indicateurs de Stock */
+        .indicator { 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 15px; 
+            text-align: center;
+        }
+        .indicator h3 { margin: 0 0 5px 0; font-size: 1.1em; color: #B0B0D0; }
+        .indicator p { font-size: 2em; font-weight: bold; margin: 0; }
+        #total-revenue { background: #004D40; color: #80CBC4; } /* Vert/Teal */
+        #total-expense { background: #B71C1C; color: #FFCDD2; } /* Rouge */
+        #current-stock { background: #1565C0; color: #BBDEFB; } /* Bleu */
+
+        /* Styles de Sécurité (Inchagé) */
         #content-area { display: none; }
-        #security-check { text-align: center; padding: 50px; background: #282828; }
-        #security-check input { padding: 15px; margin: 15px 0; border-radius: 8px; border: 2px solid #555; background: #333; color: white; width: 80%; max-width: 300px; font-size: 1.1em; }
-        #security-check button { padding: 12px 25px; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
-        #security-check button:hover { background: #388E3C; }
-        #security-result { margin-top: 15px; font-weight: bold; color: #FFD700; }
+        #security-check { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 450px; padding: 40px; background: #1C1C2C; border-radius: 15px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); border: 1px solid #33334F; text-align: center; color: #E0E0E0; z-index: 999; }
+        #security-check input { width: 90%; padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 2px solid #555577; background: #25253A; color: white; font-size: 1.2em; box-sizing: border-box; }
+        #security-check button { padding: 15px; background: #FF0000; color: white; border: none; border-radius: 8px; font-size: 1.1em; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div id="security-check" class="container">
+    <div id="security-check">
         <h1>🔐 Accès Sécurisé au Tableau de Bord</h1>
         <p>Accès refusé. Veuillez entrer le code mensuel pour déverrouiller cet outil de travail privé.</p>
         <input type="text" id="dashboard-code-input" placeholder="Code Mensuel (Ex: OCT2025)">
-        <button onclick="checkDashboardCode()">Déverrouiller</button>
+        <button onclick="checkCode()">Déverrouiller</button>
         <div id="security-result"></div>
     </div>
     
-    <div id="content-area" class="container">
-        <h1>⚙️ Espace de Travail - Gestion GOLD</h1>
-        <p>C'est l'outil que vous avez obtenu pour 40€. Le maintien de cet accès coûte seulement 10€/mois.</p>
-        <div class="tool-grid">
+    <div id="content-area">
+        <div class="secure-container">
+            <div class="header-bar">
+                <div class="title">⚙️ Tableau de Bord GOLD - Gestion Autonome</div>
+                <div class="info-group">
+                    <p id="current-date"></p>
+                    <p id="current-time"></p>
+                    <p style="margin-top: 5px;">Code du mois : <span id="monthly-code"></span></p>
+                </div>
+            </div>
             
-            <div class="tool-card">
-                <h2>🥇 1. SITE DE COMMANDE CLIENT</h2>
-                <p>Lien à partager **UNIQUEMENT** à vos abonnés pour qu'ils commandent leur stock hebdomadaire ou mensuel.</p>
-                <a href="URL_DE_VOTRE_SITE_DE_COMMANDE_CLIENTS" target="_blank">OUVRIR LE FORMULAIRE DE COMMANDE</a> 
-            </div>
+            <div class="dashboard-grid">
+                
+                <div class="main-panel">
+                    <h2>Saisie des Transactions (Sauvegarde Locale)</h2>
+                    
+                    <div class="input-group">
+                        <label for="input-revenue">Revenu (€):</label>
+                        <input type="number" id="input-revenue" placeholder="0.00" value="0.00">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="input-expense">Dépense (€):</label>
+                        <input type="number" id="input-expense" placeholder="0.00" value="0.00">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="input-stock-in">Stock Reçu (Packs):</label>
+                        <input type="number" id="input-stock-in" placeholder="0" value="0">
+                    </div>
 
-            <div class="tool-card">
-                <h2>💰 2. SUIVI DES REVENUS & STOCK</h2>
-                <p>Votre tableau de bord privé pour suivre qui a payé les 40€/10€ et gérer le stock garanti de chaque personne.</p>
-                <a href="URL_DU_TABLEAU_DE_SUIVI_CLIENTS" target="_blank">OUVRIR MON TABLEAU DE SUIVI (PRIVÉ)</a> 
-            </div>
+                    <div class="input-group">
+                        <label for="input-stock-out">Stock Vendu (Packs):</label>
+                        <input type="number" id="input-stock-out" placeholder="0" value="0">
+                    </div>
+                    
+                    <button id="save-button" onclick="saveTransaction()">Ajouter Transaction & Sauvegarder</button>
+                    <p style="font-size: 0.9em; margin-top: 10px; color: #888;">Les données sont sauvegardées uniquement sur votre navigateur.</p>
+                </div>
 
-            <div class="tool-card" style="grid-column: span 2; border-left: 5px solid #4CAF50;">
-                <h2>⭐ CODE D'ACCÈS DU MOIS :</h2>
-                <p id="current-code" style="font-size: 2em; color: #4CAF50; font-weight: bold; margin: 10px 0;">OCT2025</p>
-                <p style="font-size: 0.9em; color: #B0B0D0;">C'est le code que vous envoyez aux abonnés qui ont payé leurs 10€.</p>
-            </div>
+                <div class="stock-panel">
+                    <h2>Indicateurs Clés (Totaux)</h2>
+                    <div id="total-revenue" class="indicator">
+                        <h3>Revenus Totaux (€)</h3>
+                        <p id="display-revenue">0.00</p>
+                    </div>
+                    <div id="total-expense" class="indicator">
+                        <h3>Dépenses Totales (€)</h3>
+                        <p id="display-expense">0.00</p>
+                    </div>
+                    <div id="current-stock" class="indicator">
+                        <h3>Stock Actuel (Packs)</h3>
+                        <p id="display-stock">0</p>
+                    </div>
+                </div>
 
-        </div> 
-        <p style="margin-top: 40px; font-size: 0.9em; color: #999;">Cet accès est lié au paiement de votre abonnement de maintien de 10€.</p>
+            </div>
+        </div>
     </div>
 
     <script>
         // ####################################################################
-        // ########## SÉCURITÉ DU TABLEAU DE BORD (LOGIQUE ACCÈS CASH) ########
+        // ########## PARAMÈTRES ET LOGIQUE DE SÉCURITÉ #######################
         // ####################################################################
-        const CORRECT_DASHBOARD_CODE = "OCT2025"; 
-        
-        function grantAccess() {
-            document.getElementById('security-check').style.display = 'none';
-            document.getElementById('content-area').style.display = 'block';
-            localStorage.setItem('access_key_rbl', CORRECT_DASHBOARD_CODE);
-        }
+        const CORRECT_MONTHLY_CODE = "OCT2025"; 
 
-        function checkDashboardCode() {
+        function checkCode() {
             const inputElement = document.getElementById('dashboard-code-input');
-            const resultElement = document.getElementById('security-result');
             const enteredCode = inputElement.value.toUpperCase().trim();
+            const resultElement = document.getElementById('security-result');
 
-            if (enteredCode === CORRECT_DASHBOARD_CODE) {
-                grantAccess();
+            if (enteredCode === CORRECT_MONTHLY_CODE) {
+                // Succès: affiche le contenu, cache la sécurité
+                document.getElementById('security-check').style.display = 'none';
+                document.getElementById('content-area').style.display = 'block';
+                localStorage.setItem('access_key_rbl', CORRECT_MONTHLY_CODE);
+                loadData(); // Charge les données après l'accès
             } else {
-                resultElement.textContent = "Code Invalide ou Expiré. Accès refusé.";
+                resultElement.textContent = "Code Invalide ou Expiré. ❌";
                 resultElement.style.color = '#FF0000';
             }
         }
-
+        
+        // Vérification automatique à l'ouverture
         document.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlKey = urlParams.get('key');
             const savedKey = localStorage.getItem('access_key_rbl');
-            
-            let accessGranted = false;
-
-            // 1. VÉRIFICATION PAR LIEN (ACCÈS 'CASH' DEPUIS LE PORTAIL)
-            if (urlKey && urlKey.toUpperCase() === CORRECT_DASHBOARD_CODE) {
-                accessGranted = true;
-                history.replaceState(null, '', window.location.pathname);
-            } 
-            
-            // 2. VÉRIFICATION PAR MÉMOIRE LOCALE (ACCÈS DIRECT ou TÉLÉCHARGEMENT)
-            else if (savedKey === CORRECT_DASHBOARD_CODE) {
-                accessGranted = true;
+            if (savedKey === CORRECT_MONTHLY_CODE) {
+                document.getElementById('security-check').style.display = 'none';
+                document.getElementById('content-area').style.display = 'block';
+                loadData();
             }
-
-            if (accessGranted) {
-                grantAccess();
-            }
-            document.getElementById('current-code').textContent = CORRECT_DASHBOARD_CODE;
+            document.getElementById('monthly-code').textContent = CORRECT_MONTHLY_CODE;
+            updateDateTime();
+            setInterval(updateDateTime, 1000); // Met à jour l'heure chaque seconde
         });
+        
+        function updateDateTime() {
+            const now = new Date();
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            document.getElementById('current-date').textContent = now.toLocaleDateString('fr-FR', dateOptions);
+            document.getElementById('current-time').textContent = now.toLocaleTimeString('fr-FR', timeOptions);
+        }
+
+
+        // ####################################################################
+        // ########## LOGIQUE DE GESTION DES DONNÉES (LOCAL STORAGE) ##########
+        // ####################################################################
+        
+        function getInitialState() {
+            // Initialise l'état avec les valeurs sauvegardées ou à zéro
+            return {
+                revenue: parseFloat(localStorage.getItem('rbl_total_revenue') || '0'),
+                expense: parseFloat(localStorage.getItem('rbl_total_expense') || '0'),
+                stock: parseInt(localStorage.getItem('rbl_current_stock') || '0')
+            };
+        }
+
+        function loadData() {
+            // Affiche les données chargées
+            const state = getInitialState();
+            document.getElementById('display-revenue').textContent = state.revenue.toFixed(2);
+            document.getElementById('display-expense').textContent = state.expense.toFixed(2);
+            document.getElementById('display-stock').textContent = state.stock;
+        }
+
+        function saveTransaction() {
+            const revenueInput = parseFloat(document.getElementById('input-revenue').value) || 0;
+            const expenseInput = parseFloat(document.getElementById('input-expense').value) || 0;
+            const stockInInput = parseInt(document.getElementById('input-stock-in').value) || 0;
+            const stockOutInput = parseInt(document.getElementById('input-stock-out').value) || 0;
+
+            const state = getInitialState();
+
+            // Mettre à jour l'état
+            state.revenue += revenueInput;
+            state.expense += expenseInput;
+            state.stock = state.stock + stockInInput - stockOutInput;
+
+            // Sauvegarder dans le navigateur
+            localStorage.setItem('rbl_total_revenue', state.revenue);
+            localStorage.setItem('rbl_total_expense', state.expense);
+            localStorage.setItem('rbl_current_stock', state.stock);
+
+            // Réinitialiser les champs de saisie
+            document.getElementById('input-revenue').value = '0.00';
+            document.getElementById('input-expense').value = '0.00';
+            document.getElementById('input-stock-in').value = '0';
+            document.getElementById('input-stock-out').value = '0';
+            
+            // Recharger l'affichage
+            loadData();
+            alert('Transaction sauvegardée localement !');
+        }
     </script>
 </body>
 </html>
