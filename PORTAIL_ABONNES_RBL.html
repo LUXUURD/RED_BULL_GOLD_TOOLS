@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portail d'Accès RBL</title>
     
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -88,7 +84,7 @@
 
             if (enteredCode === CORRECT_ACCESS_CODE) {
                 // Redirection vers le Tableau de Bord (Site C)
-                // Le paramètre ?key permet de passer la vérification initiale du Dashboard (le 'cash')
+                // Le paramètre ?key permet de passer la vérification initiale du Dashboard
                 window.location.href = `TABLEAUDEGESTION.html?key=${enteredCode}`;
             } else {
                 messageElement.textContent = "Code Invalide. ❌ Veuillez réessayer.";
