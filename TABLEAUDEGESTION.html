@@ -5,32 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tableau de Bord GOLD - Outil de Gestion Privé</title>
     <style>
-        /* Styles de Base et de l'outil */
         body { font-family: 'Arial', sans-serif; background: #121212; color: #E0E0E0; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }
         .container { max-width: 850px; margin: 30px auto; background: #1E1E1E; border-radius: 15px; padding: 40px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
         h1 { color: #FF0000; font-size: 2.5em; margin-bottom: 20px; border-bottom: 3px solid #FFD700; padding-bottom: 10px; }
         h2 { color: #FFD700; margin-top: 0; padding-bottom: 5px; font-size: 1.5em;}
         p { color: #B0B0D0; }
-
-        /* Styles des Cartes Outils */
         .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 30px; }
         .tool-card { background: #282828; padding: 25px; border-radius: 10px; text-align: left; border-left: 5px solid #FFD700; }
-        .tool-card a { 
-            display: block; /* Lien prend toute la largeur */
-            background: #FF0000; /* Rouge */
-            color: white;
-            padding: 12px 0; /* Ajustement du padding */
-            border: none;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: bold;
-            margin-top: 15px;
-            text-align: center;
-            transition: background 0.3s;
-        }
+        .tool-card a { display: block; background: #FF0000; color: white; padding: 12px 0; border: none; border-radius: 5px; text-decoration: none; font-weight: bold; margin-top: 15px; text-align: center; transition: background 0.3s; }
         .tool-card a:hover { background: #cc0000; }
-
-        /* Styles pour le module de sécurité */
         #content-area { display: none; }
         #security-check { text-align: center; padding: 50px; background: #282828; }
         #security-check input { padding: 15px; margin: 15px 0; border-radius: 8px; border: 2px solid #555; background: #333; color: white; width: 80%; max-width: 300px; font-size: 1.1em; }
@@ -40,84 +23,88 @@
     </style>
 </head>
 <body>
-
     <div id="security-check" class="container">
         <h1>🔐 Accès Sécurisé au Tableau de Bord</h1>
-        <p>Entrez le code mensuel pour déverrouiller l'accès. (Protection anti-téléchargement ou partage non autorisé).</p>
+        <p>Accès refusé. Veuillez entrer le code mensuel pour déverrouiller cet outil de travail privé.</p>
         <input type="text" id="dashboard-code-input" placeholder="Code Mensuel (Ex: OCT2025)">
         <button onclick="checkDashboardCode()">Déverrouiller</button>
         <div id="security-result"></div>
     </div>
     
     <div id="content-area" class="container">
-        
         <h1>⚙️ Espace de Travail - Gestion GOLD</h1>
         <p>C'est l'outil que vous avez obtenu pour 40€. Le maintien de cet accès coûte seulement 10€/mois.</p>
-
         <div class="tool-grid">
             
             <div class="tool-card">
                 <h2>🥇 1. SITE DE COMMANDE CLIENT</h2>
                 <p>Lien à partager **UNIQUEMENT** à vos abonnés pour qu'ils commandent leur stock hebdomadaire ou mensuel.</p>
-                
                 <a href="URL_DE_VOTRE_SITE_DE_COMMANDE_CLIENTS" target="_blank">OUVRIR LE FORMULAIRE DE COMMANDE</a> 
             </div>
 
             <div class="tool-card">
                 <h2>💰 2. SUIVI DES REVENUS & STOCK</h2>
                 <p>Votre tableau de bord privé pour suivre qui a payé les 40€/10€ et gérer le stock garanti de chaque personne.</p>
-                
                 <a href="URL_DU_TABLEAU_DE_SUIVI_CLIENTS" target="_blank">OUVRIR MON TABLEAU DE SUIVI (PRIVÉ)</a> 
             </div>
 
             <div class="tool-card" style="grid-column: span 2; border-left: 5px solid #4CAF50;">
                 <h2>⭐ CODE D'ACCÈS DU MOIS :</h2>
-                <p style="font-size: 2em; color: #4CAF50; font-weight: bold; margin: 10px 0;">OCT2025</p>
+                <p id="current-code" style="font-size: 2em; color: #4CAF50; font-weight: bold; margin: 10px 0;">OCT2025</p>
                 <p style="font-size: 0.9em; color: #B0B0D0;">C'est le code que vous envoyez aux abonnés qui ont payé leurs 10€.</p>
             </div>
 
-        </div> <p style="margin-top: 40px; font-size: 0.9em; color: #999;">Cet accès est lié au paiement de votre abonnement de maintien de 10€.</p>
-
+        </div> 
+        <p style="margin-top: 40px; font-size: 0.9em; color: #999;">Cet accès est lié au paiement de votre abonnement de maintien de 10€.</p>
     </div>
 
     <script>
         // ####################################################################
-        // ########## SÉCURITÉ DU TABLEAU DE BORD (DOUBLE VERROUILLAGE) #######
+        // ########## SÉCURITÉ DU TABLEAU DE BORD (LOGIQUE ACCÈS CASH) ########
         // ####################################################################
+        const CORRECT_DASHBOARD_CODE = "OCT2025"; 
         
-        // ATTENTION : Ce code DOIT être le même que celui du Portail Abonnés (Site B)
-        const CORRECT_DASHBOARD_CODE = "OCT2025"; // CLÉ ACTUELLE
-        
-        // Fonction pour vérifier le code entré par l'utilisateur
+        function grantAccess() {
+            document.getElementById('security-check').style.display = 'none';
+            document.getElementById('content-area').style.display = 'block';
+            localStorage.setItem('access_key_rbl', CORRECT_DASHBOARD_CODE);
+        }
+
         function checkDashboardCode() {
             const inputElement = document.getElementById('dashboard-code-input');
             const resultElement = document.getElementById('security-result');
-            const contentArea = document.getElementById('content-area');
-            const securityCheck = document.getElementById('security-check');
             const enteredCode = inputElement.value.toUpperCase().trim();
 
             if (enteredCode === CORRECT_DASHBOARD_CODE) {
-                // Code bon : affichage du contenu et masquage du formulaire de sécurité
-                securityCheck.style.display = 'none';
-                contentArea.style.display = 'block';
-                // Sauvegarde du code en mémoire locale pour l'accès sans code/téléchargement
-                localStorage.setItem('access_key_rbl', CORRECT_DASHBOARD_CODE);
-                
+                grantAccess();
             } else {
-                // Code incorrect : message d'erreur
                 resultElement.textContent = "Code Invalide ou Expiré. Accès refusé.";
                 resultElement.style.color = '#FF0000';
             }
         }
 
-        // Vérification au chargement de la page (pour le téléchargement/accès direct)
         document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlKey = urlParams.get('key');
             const savedKey = localStorage.getItem('access_key_rbl');
-            if (savedKey === CORRECT_DASHBOARD_CODE) {
-                // Si la clé est valide et dans le local storage, on affiche directement
-                document.getElementById('security-check').style.display = 'none';
-                document.getElementById('content-area').style.display = 'block';
+            
+            let accessGranted = false;
+
+            // 1. VÉRIFICATION PAR LIEN (ACCÈS 'CASH' DEPUIS LE PORTAIL)
+            if (urlKey && urlKey.toUpperCase() === CORRECT_DASHBOARD_CODE) {
+                accessGranted = true;
+                history.replaceState(null, '', window.location.pathname);
+            } 
+            
+            // 2. VÉRIFICATION PAR MÉMOIRE LOCALE (ACCÈS DIRECT ou TÉLÉCHARGEMENT)
+            else if (savedKey === CORRECT_DASHBOARD_CODE) {
+                accessGranted = true;
             }
+
+            if (accessGranted) {
+                grantAccess();
+            }
+            document.getElementById('current-code').textContent = CORRECT_DASHBOARD_CODE;
         });
     </script>
 </body>
