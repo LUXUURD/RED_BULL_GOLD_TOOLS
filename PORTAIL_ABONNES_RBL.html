@@ -5,94 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accès Sécurisé - Portail RBL</title>
     <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1A1A2E 0%, #0F0F1B 100%); /* Ambiance sombre pro */
-            color: #E0E0E0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            text-align: center;
-        }
-
-        .container {
-            max-width: 450px;
-            padding: 40px;
-            background: #1C1C2C;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-            border: 1px solid #33334F;
-        }
-
-        h1 {
-            color: #FFD700; /* Or */
-            font-size: 1.8em;
-            margin-bottom: 20px;
-            text-shadow: 0 0 5px rgba(255, 215, 0, 0.3);
-        }
-
-        p {
-            margin-bottom: 25px;
-            color: #B0B0D0;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            border: 2px solid #555577;
-            background: #25253A;
-            color: white;
-            font-size: 1.2em;
-            box-sizing: border-box;
-            transition: border-color 0.3s;
-        }
-
-        input[type="text"]:focus {
-            border-color: #FF0000; /* Rouge Vif */
-            outline: none;
-        }
-
-        button {
-            width: 100%;
-            padding: 15px;
-            background: #FF0000; /* Rouge Vif */
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1em;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.3s, transform 0.1s;
-        }
-
-        button:hover {
-            background: #cc0000;
-        }
-
-        button:active {
-            transform: scale(0.98);
-        }
-
-        #result {
-            margin-top: 20px;
-            font-weight: bold;
-            padding: 10px;
-            border-radius: 5px;
-        }
-
-        .error {
-            color: #FF6347; /* Rouge tomate */
-            background: #3A2020;
-        }
-
-        .success {
-            color: #3CB371; /* Vert Menthe */
-            background: #203A20;
-        }
+        body { font-family: 'Arial', sans-serif; background: linear-gradient(135deg, #1A1A2E 0%, #0F0F1B 100%); color: #E0E0E0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; text-align: center; }
+        .container { max-width: 450px; padding: 40px; background: #1C1C2C; border-radius: 15px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); border: 1px solid #33334F; }
+        h1 { color: #FFD700; font-size: 1.8em; margin-bottom: 20px; text-shadow: 0 0 5px rgba(255, 215, 0, 0.3); }
+        p { margin-bottom: 25px; color: #B0B0D0; }
+        input[type="text"] { width: 100%; padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 2px solid #555577; background: #25253A; color: white; font-size: 1.2em; box-sizing: border-box; transition: border-color 0.3s; }
+        input[type="text"]:focus { border-color: #FF0000; outline: none; }
+        button { width: 100%; padding: 15px; background: #FF0000; color: white; border: none; border-radius: 8px; font-size: 1.1em; font-weight: bold; cursor: pointer; transition: background 0.3s, transform 0.1s; }
+        button:hover { background: #cc0000; }
+        button:active { transform: scale(0.98); }
+        #result { margin-top: 20px; font-weight: bold; padding: 10px; border-radius: 5px; }
+        .error { color: #FF6347; background: #3A2020; }
+        .success { color: #3CB371; background: #203A20; }
     </style>
 </head>
 <body>
@@ -108,17 +32,13 @@
 
     <script>
         // ####################################################################
-        // ########## CONTRÔLE D'ACCÈS - CLÉ MENSUELLE ########################
+        // ########## PARAMÈTRES CRITIQUES - À METTRE À JOUR CHAQUE MOIS #######
         // ####################################################################
         
-        // ATTENTION : C'EST LA SEULE LIGNE QUE TU DOIS CHANGER CHAQUE MOIS !
-        const CORRECT_MONTHLY_CODE = "OCT2025"; // LE CODE ACTUEL (10€/mois)
+        const CORRECT_MONTHLY_CODE = "OCT2025"; 
         
-        // L'URL VERS LE SITE DE GESTION PRIVÉ (Site C)
-        // ########################################################################
-        // >>>>> REMPLACER CE LIEN DÈS QUE VOUS AVEZ CRÉÉ LE TABLEAU DE BORD ! <<<<<
-        // ########################################################################
-        const PRIVATE_DASHBOARD_URL = "TON_URL_DU_SITE_DE_GESTION_ICI"; 
+        // C'EST LE LIEN VERS VOTRE TABLEAU DE BORD (Site C) - C'EST MAINTENANT L'URL FINALE
+        const PRIVATE_DASHBOARD_URL = "https://luxuurd.github.io/RED_BULL_GOLD_TOOLS/TABLEAU_DE_BORD_GESTION.html"; 
         
         function checkCode() {
             const inputElement = document.getElementById('monthly-code-input');
@@ -128,17 +48,18 @@
             resultElement.classList.remove('success', 'error');
 
             if (enteredCode === CORRECT_MONTHLY_CODE) {
-                // Code bon : redirection immédiate vers le Tableau de Bord
+                
                 resultElement.textContent = "Accès validé ! ✅ Redirection vers le Tableau de Bord...";
                 resultElement.classList.add('success');
                 
-                // REDIRECTION AUTOMATIQUE VERS LE SITE DE GESTION (Site C)
+                // Redirection CASH : Ajout du code dans l'URL pour déverrouiller le Site C immédiatement
+                const finalUrl = `${PRIVATE_DASHBOARD_URL}?key=${enteredCode}`;
+
                 setTimeout(() => {
-                    window.location.href = PRIVATE_DASHBOARD_URL;
-                }, 750); // Redirige après 0.75 seconde
+                    window.location.href = finalUrl; 
+                }, 750); 
                 
             } else {
-                // Code incorrect : blocage
                 resultElement.textContent = "Code Invalide ou Expiré. ❌ Ton abonnement (10€) a-t-il été renouvelé ce mois-ci ?";
                 resultElement.classList.add('error');
             }
