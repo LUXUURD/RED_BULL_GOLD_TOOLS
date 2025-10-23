@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard RBL - Gestion Avancée</title>
+    
     <style>
         /* ------------------------------------------------------------------ */
         /* BASE & LAYOUT */
@@ -75,6 +76,373 @@
         #event-list li { margin-bottom: 5px; border-left: 3px solid #FF0000; padding-left: 10px; }
 
         /* ------------------------------------------------------------------ */
+        /* SECURITY OVERLAY (CORRECTION DU BUG D'AFFICHAGE) */
+        /* ------------------------------------------------------------------ */
+        #content-area { 
+            display: block; /* AFFICHÉ PAR DÉFAUT POUR CORRIGER LE BUG */
+            height: 100%; 
+        }
+        #security-check { 
+            display: none !important; /* CACHE L'ÉCRAN DE SÉCURITÉ QUI BLOQUE L'AFFICHAGE */
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            max-width: 450px; padding: 40px; background: #1C1C2C; border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); border: 1px solid #33334F; 
+            text-align: center; color: #E0E0E0; z-index: 999; 
+        }
+    </style>
+</head>
+<body>
+    <div id="security-check">
+        <h1>🔐 Accès Sécurisé au Tableau de Bord</h1>
+        <p>Accès refusé. Veuillez entrer le code mensuel pour déverrouiller cet outil de travail privé.</p>
+        <input type="text" id="dashboard-code-input" placeholder="Code Mensuel (Ex: OCT2025)">
+        <button onclick="checkCode()">Déverrouiller</button>
+        <div id="security-result"></div>
+    </div>
+    
+    <div id="content-area">
+        <div class="dashboard-wrapper">
+            
+            <div class="sidebar">
+                <p style="font-size: 0.9em; color: #AAAAAA; margin-bottom: 25px;">Code du mois : <span id="monthly-code" style="color: #4CAF50;"></span></p>
+
+                <h2>🗓️ Calendrier des Commandes Planifiées</h2>
+                
+                <div class="calendar-header">
+                    <button id="prev-month-button" onclick="changeMonth(-1)">&#9664;</button>
+                    <span id="month-year-display"></span>
+                    <button id="next-month-button" onclick="changeMonth(1)">&#9654;</button>
+                </div>
+
+                <div class="calendar-grid" id="calendar-grid">
+                    <div class="day-name">Lun</div><div class="day-name">Mar</div><div class="day-name">Mer</div>
+                    <div class="day-name">Jeu</div><div class="day-name">Ven</div><div class="day-name">Sam</div>
+                    <div class="day-name">Dim</div>
+                    </div>
+
+                <div id="event-display">
+                    <h3 id="event-date-title">Sélectionnez un jour</h3>
+                    <p id="event-list-message" style="color:#FFD700; font-size:0.9em;">Aucune commande planifiée pour cette date.</p>
+                    <ul id="event-list"></ul>
+                    
+                    <input type="text" id="event-input" placeholder="Ex: Commande 5 packs de Pierre" maxlength="50">
+                    <button id="add-event-button" onclick="addEvent()">Ajouter la Commande</button>
+                </div>
+
+            </div>
+            
+            <div class="main-content">
+                
+                <h1>Espace de Travail - Gestion RBL LUXUURD</h1>
+                <p id="current-datetime" style="color: #FFD700; font-weight: bold;"></p>
+
+                <div class="widget-grid">
+                    <div class="indicator-card" style="border-left: 5px solid #80CBC4;">
+                        <h3>Revenus Totaux (€)</h3>
+                        <p id="display-revenue">0.00</p>
+                    </div>
+                    <div class="indicator-card" style="border-left: 5px solid #FFCDD2;">
+                        <h3>Dépenses Totales (€)</h3>
+                        <p id="display-expense">0.00</p>
+                    </div>
+                    <div class="indicator-card" style="border-left: 5px solid #BBDEFB;">
+                        <h3>Stock Actuel (Packs)</h3>
+                        <p id="display-stock">0</p>
+                    </div>
+                </div>
+
+                <div class="input-panel">
+                    <h2>Enregistrement des Transactions</h2>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label for="input-revenue">Nouveau Revenu (€)</label>
+                            <input type="number" id="input-revenue" placeholder="0.00" value="0.00">
+                        </div>
+                        <div class="input-group">
+                            <label for="input-expense">Nouvelle Dépense (€)</label>
+                            <input type="number" id="input-expense" placeholder="0.00" value="0.00">
+                        </div>
+                        <div class="input-group">
+                            <label for="input-stock-in">Stock Reçu (+ Packs)</label>
+                            <input type="number" id="input-stock-in" placeholder="0" value="0">
+                        </div>
+                        <div class="input-group">
+                            <label for="input-stock-out">Stock Vendu (- Packs)</label>
+                            <input type="number" id="input-stock-out" placeholder="0" value="0">
+                        </div>
+                    </div>
+                    <button id="save-button" onclick="saveTransaction()">Ajouter Transaction & Mettre à jour les Totaux</button>
+                    <p style="font-size: 0.8em; margin-top: 15px; color: #AAAAAA;">*Les totaux et les commandes du calendrier sont stockés dans le navigateur de cet appareil. Si vous effacez le cache, les données seront perdues.</p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ####################################################################
+        // ########## PARAMÈTRES & LOGIQUE ###################################
+        // ####################################################################
+        const CORRECT_MONTHLY_CODE = "OCT2025"; 
+        const NOW = new Date();
+        let currentMonth = NOW.getMonth();
+        let currentYear = NOW.getFullYear();
+        let selectedDate = null;
+        
+        // Initialisation de l'état global
+        let state = {
+            revenue: 0,
+            expense: 0,
+            stock: 0,
+            events: {} // Structure: {'YYYY-MM-DD': ['Event 1', 'Event 2']}
+        };
+
+        // Cette fonction n'est plus appelée au démarrage grâce au CSS, 
+        // mais elle est laissée ici en cas de besoin futur.
+        function checkCode() {
+            // ... (logique de vérification)
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Le CSS garantit l'affichage. On charge les données directement.
+            loadData();
+            
+            document.getElementById('monthly-code').textContent = CORRECT_MONTHLY_CODE;
+            updateDateTime();
+            setInterval(updateDateTime, 1000); 
+            renderCalendar();
+        });
+        
+        function updateDateTime() {
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            const now = new Date();
+            document.getElementById('current-datetime').textContent = `Date du jour : ${now.toLocaleDateString('fr-FR', dateOptions)} - ${now.toLocaleTimeString('fr-FR', timeOptions)}`;
+        }
+
+
+        // ########## GESTION DES DONNÉES FINANCES/STOCK ######################
+
+        function loadData() {
+            // Charge les totaux
+            state.revenue = parseFloat(localStorage.getItem('rbl_total_revenue') || '0');
+            state.expense = parseFloat(localStorage.getItem('rbl_total_expense') || '0');
+            state.stock = parseInt(localStorage.getItem('rbl_current_stock') || '0');
+
+            // Charge les événements du calendrier
+            try {
+                const storedEvents = localStorage.getItem('rbl_calendar_events');
+                if (storedEvents) {
+                    state.events = JSON.parse(storedEvents);
+                }
+            } catch (e) {
+                console.error("Erreur lors du chargement des événements :", e);
+                state.events = {};
+            }
+            
+            updateDisplay();
+            renderCalendar(); 
+        }
+
+        function updateDisplay() {
+            document.getElementById('display-revenue').textContent = state.revenue.toFixed(2).replace('.', ',');
+            document.getElementById('display-expense').textContent = state.expense.toFixed(2).replace('.', ',');
+            document.getElementById('display-stock').textContent = state.stock;
+        }
+
+        function saveTransaction() {
+            const revenueInput = parseFloat(document.getElementById('input-revenue').value) || 0;
+            const expenseInput = parseFloat(document.getElementById('input-expense').value) || 0;
+            const stockInInput = parseInt(document.getElementById('input-stock-in').value) || 0;
+            const stockOutInput = parseInt(document.getElementById('input-stock-out').value) || 0;
+
+            // Mettre à jour l'état
+            state.revenue += revenueInput;
+            state.expense += expenseInput;
+            state.stock = state.stock + stockInInput - stockOutInput;
+            
+            // Sauvegarder dans le navigateur
+            localStorage.setItem('rbl_total_revenue', state.revenue);
+            localStorage.setItem('rbl_total_expense', state.expense);
+            localStorage.setItem('rbl_current_stock', state.stock);
+
+            // Réinitialiser les champs de saisie
+            document.getElementById('input-revenue').value = '0.00';
+            document.getElementById('input-expense').value = '0.00';
+            document.getElementById('input-stock-in').value = '0';
+            document.getElementById('input-stock-out').value = '0';
+            
+            updateDisplay();
+            alert('Transaction sauvegardée localement !');
+        }
+
+        // ########## LOGIQUE CALENDRIER ET ÉVÉNEMENTS ########################
+
+        const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+
+        function changeMonth(step) {
+            currentMonth += step;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            } else if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            renderCalendar();
+            document.getElementById('event-list').innerHTML = ''; // Nettoyer l'affichage de l'événement
+            document.getElementById('event-date-title').textContent = 'Sélectionnez un jour';
+            document.getElementById('event-list-message').style.display = 'block';
+            selectedDate = null;
+        }
+
+        function renderCalendar() {
+            document.getElementById('month-year-display').textContent = `${monthNames[currentMonth]} ${currentYear}`;
+            const calendarGrid = document.getElementById('calendar-grid');
+            
+            // Nettoyer les jours (mais garder les noms des jours)
+            const dayNamesCount = 7;
+            while (calendarGrid.children.length > dayNamesCount) {
+                calendarGrid.removeChild(calendarGrid.lastChild);
+            }
+
+            const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            // getDay() renvoie 0 pour Dimanche, on veut 0 pour Lundi (Lundi=1, Dimanche=7)
+            let startDay = firstDayOfMonth.getDay();
+            if (startDay === 0) startDay = 7; // Convertir Dimanche (0) en 7
+            let emptyDays = startDay - 1; // Nombre de jours vides avant le premier du mois
+
+            // Jours vides
+            for (let i = 0; i < emptyDays; i++) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'calendar-day empty-day';
+                calendarGrid.appendChild(emptyDiv);
+            }
+
+            // Jours du mois
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day current-month';
+                dayDiv.textContent = day;
+                dayDiv.dataset.date = dateKey;
+                dayDiv.onclick = () => selectDate(dayDiv, dateKey);
+
+                // Marquer le jour actuel
+                if (day === NOW.getDate() && currentMonth === NOW.getMonth() && currentYear === NOW.getFullYear()) {
+                    dayDiv.classList.add('today');
+                }
+                
+                // Marquer les jours avec des événements
+                if (state.events[dateKey] && state.events[dateKey].length > 0) {
+                    dayDiv.classList.add('has-event');
+                }
+
+                calendarGrid.appendChild(dayDiv);
+            }
+        }
+
+        function selectDate(element, dateKey) {
+            // Supprimer la sélection précédente
+            document.querySelectorAll('.calendar-day').forEach(d => {
+                d.style.backgroundColor = '';
+            });
+
+            // Ajouter la sélection actuelle
+            element.style.backgroundColor = '#33334F';
+            selectedDate = dateKey;
+            
+            renderEvents(dateKey);
+        }
+
+        function renderEvents(dateKey) {
+            const events = state.events[dateKey] || [];
+            const list = document.getElementById('event-list');
+            const message = document.getElementById('event-list-message');
+            document.getElementById('event-date-title').textContent = `Commandes pour le ${new Date(dateKey).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`;
+            list.innerHTML = '';
+            
+            if (events.length === 0) {
+                message.style.display = 'block';
+            } else {
+                message.style.display = 'none';
+                events.forEach((event, index) => {
+                    const li = document.createElement('li');
+                    li.textContent = event;
+                    list.appendChild(li);
+                });
+            }
+        }
+
+        function addEvent() {
+            if (!selectedDate) {
+                alert("Veuillez d'abord sélectionner une date dans le calendrier.");
+                return;
+            }
+            
+            const input = document.getElementById('event-input');
+            const eventText = input.value.trim();
+
+            if (eventText) {
+                if (!state.events[selectedDate]) {
+                    state.events[selectedDate] = [];
+                }
+                state.events[selectedDate].push(eventText);
+                
+                // Sauvegarder dans localStorage
+                localStorage.setItem('rbl_calendar_events', JSON.stringify(state.events));
+                
+                // Mettre à jour l'affichage
+                renderEvents(selectedDate);
+                renderCalendar(); // Pour ajouter le style 'has-event' au jour
+                input.value = '';
+                alert(`Commande planifiée pour le ${selectedDate} !`);
+            }
+        }
+    </script>
+</body>
+</html>        /* ------------------------------------------------------------------ */
+        /* INPUT PANEL */
+        /* ------------------------------------------------------------------ */
+        .input-panel { background: #151520; padding: 30px; border-radius: 10px; margin-bottom: 30px; }
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 0.9em; margin-bottom: 5px; color: #FFD700; }
+        .input-group input { width: 100%; padding: 12px; border-radius: 5px; border: 1px solid #333; background: #0A0A10; color: white; font-size: 1em; box-sizing: border-box; }
+        #save-button { background: #FF0000; color: white; padding: 15px; border: none; border-radius: 5px; font-size: 1.1em; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; transition: background 0.3s; }
+        #save-button:hover { background: #cc0000; }
+
+        /* ------------------------------------------------------------------ */
+        /* CALENDAR STYLES */
+        /* ------------------------------------------------------------------ */
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .calendar-header button { background: none; border: none; color: #FFD700; font-size: 1.5em; cursor: pointer; }
+        #month-year-display { font-size: 1.2em; font-weight: bold; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; }
+        .day-name { font-size: 0.8em; color: #AAAAAA; padding: 5px 0; }
+        .calendar-day { 
+            padding: 8px 0; 
+            cursor: pointer; 
+            border-radius: 50%; 
+            transition: background 0.2s;
+            position: relative;
+        }
+        .calendar-day:not(.empty-day):hover { background: #33334F; }
+        .today { border: 2px solid #4CAF50; background: #223322 !important; color: #4CAF50; }
+        .has-event { border: 2px solid #FF0000; }
+        .current-month { color: #EAEAEA; }
+        .other-month { color: #555555; }
+        
+        /* Event Display Panel */
+        #event-display { margin-top: 25px; padding: 15px; background: #0A0A10; border-radius: 5px; min-height: 100px; }
+        #event-display h3 { color: #FF0000; margin-top: 0; }
+        #event-input { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #333; background: #1C1C2C; color: white; margin-top: 10px; box-sizing: border-box;}
+        #add-event-button { background: #FFD700; color: #121212; padding: 8px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; }
+        #event-list { list-style: none; padding: 0; text-align: left; }
+        #event-list li { margin-bottom: 5px; border-left: 3px solid #FF0000; padding-left: 10px; }
+
+        /* ------------------------------------------------------------------ */
         /* SECURITY OVERLAY */
         /* ------------------------------------------------------------------ */
         #content-area { display: none; height: 100%; }
@@ -4054,6 +4422,7 @@
     </script>
 </body>
 </html>
+
 
 
 
