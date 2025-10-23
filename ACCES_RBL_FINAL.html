@@ -3,104 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portail d'Accès RBL</title>
-    
+    <title>Accès Sécurisé - Portail RBL</title>
     <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #0A0A10; /* Fond très sombre */
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-        .container {
-            background: #1C1C2C; /* Conteneur sombre */
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-            border-top: 5px solid #FF0000; /* Bande rouge */
-        }
-        h1 {
-            color: #FFD700; /* Or/Jaune pour le titre */
-            margin-bottom: 25px;
-            font-size: 1.8em;
-        }
-        input[type="password"] {
-            width: 100%;
-            padding: 15px;
-            margin: 15px 0;
-            border: 2px solid #555577;
-            border-radius: 8px;
-            background: #25253A; /* Champ de saisie sombre */
-            color: white;
-            font-size: 1.1em;
-            box-sizing: border-box;
-            text-align: center;
-        }
-        button {
-            width: 100%;
-            padding: 15px;
-            background-color: #FF0000; /* Bouton rouge vif */
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1em;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #cc0000;
-        }
-        #message {
-            margin-top: 20px;
-            font-weight: bold;
-            color: #FFD700;
-        }
+        body { font-family: 'Arial', sans-serif; background: linear-gradient(135deg, #1A1A2E 0%, #0F0F1B 100%); color: #E0E0E0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; text-align: center; }
+        .container { max-width: 450px; padding: 40px; background: #1C1C2C; border-radius: 15px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); border: 1px solid #33334F; }
+        h1 { color: #FFD700; font-size: 1.8em; margin-bottom: 20px; text-shadow: 0 0 5px rgba(255, 215, 0, 0.3); }
+        p { margin-bottom: 25px; color: #B0B0D0; }
+        input[type="text"] { width: 100%; padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 2px solid #555577; background: #25253A; color: white; font-size: 1.2em; box-sizing: border-box; transition: border-color 0.3s; }
+        input[type="text"]:focus { border-color: #FF0000; outline: none; }
+        button { width: 100%; padding: 15px; background: #FF0000; color: white; border: none; border-radius: 8px; font-size: 1.1em; font-weight: bold; cursor: pointer; transition: background 0.3s, transform 0.1s; }
+        button:hover { background: #cc0000; }
+        button:active { transform: scale(0.98); }
+        #result { margin-top: 20px; font-weight: bold; padding: 10px; border-radius: 5px; }
+        .error { color: #FF6347; background: #3A2020; }
+        .success { color: #3CB371; background: #203A20; }
     </style>
 </head>
 <body>
+
     <div class="container">
-        <h1>🔓 ACCÈS GESTION GOLD RBL</h1>
-        <p>Entrez votre code personnel de gestion pour déverrouiller l'outil.</p>
-        <input type="password" id="access-code" placeholder="Code de Gestion Securisé">
-        <button onclick="checkAccess()">Déverrouiller le Tableau de Bord</button>
-        <div id="message"></div>
+        <h1>🔑 Accès Portail Abonnés</h1>
+        <p>Veuillez entrer le code mensuel unique que vous avez reçu après votre paiement de 10€.</p>
+        
+        <input type="text" id="monthly-code-input" placeholder="Code (Ex: OCT2025)">
+        <button onclick="checkCode()">Déverrouiller l'Accès</button>
+        <div id="result"></div>
     </div>
 
     <script>
-        // Le code de gestion est le même que le code mensuel du Dashboard pour simplifier
-        const CORRECT_ACCESS_CODE = "OCT2025"; 
+        // ####################################################################
+        // ########## PARAMÈTRES CRITIQUES - À METTRE À JOUR CHAQUE MOIS #######
+        // ####################################################################
         
-        function checkAccess() {
-            const enteredCode = document.getElementById('access-code').value.toUpperCase().trim();
-            const messageElement = document.getElementById('message');
+        const CORRECT_MONTHLY_CODE = "OCT2025"; 
+        
+        // C'EST LE LIEN VERS VOTRE TABLEAU DE BORD (Site C) - C'EST MAINTENANT L'URL FINALE
+        const PRIVATE_DASHBOARD_URL = "https://luxuurd.github.io/RED_BULL_GOLD_TOOLS/TABLEAU_DE_BORD_GESTION.html"; 
+        
+        function checkCode() {
+            const inputElement = document.getElementById('monthly-code-input');
+            const resultElement = document.getElementById('result');
+            const enteredCode = inputElement.value.toUpperCase().trim();
 
-            if (enteredCode === CORRECT_ACCESS_CODE) {
-                // Redirection vers le Tableau de Bord (Site C)
-                // Le paramètre ?key permet de passer la vérification initiale du Dashboard
-                window.location.href = `TABLEAUDEGESTION.html?key=${enteredCode}`;
+            resultElement.classList.remove('success', 'error');
+
+            if (enteredCode === CORRECT_MONTHLY_CODE) {
+                
+                resultElement.textContent = "Accès validé ! ✅ Redirection vers le Tableau de Bord...";
+                resultElement.classList.add('success');
+                
+                // Redirection CASH : Ajout du code dans l'URL pour déverrouiller le Site C immédiatement
+                const finalUrl = `${PRIVATE_DASHBOARD_URL}?key=${enteredCode}`;
+
+                setTimeout(() => {
+                    window.location.href = finalUrl; 
+                }, 750); 
+                
             } else {
-                messageElement.textContent = "Code Invalide. ❌ Veuillez réessayer.";
-                messageElement.style.color = '#FF0000';
+                resultElement.textContent = "Code Invalide ou Expiré. ❌ Ton abonnement (10€) a-t-il été renouvelé ce mois-ci ?";
+                resultElement.classList.add('error');
             }
         }
-
-        // Permet l'envoi par la touche Entrée
-        document.getElementById('access-code').addEventListener('keyup', function(event) {
-            if (event.key === 'Enter') {
-                checkAccess();
-            }
-        });
     </script>
 </body>
 </html>
-  
-
-
