@@ -3,67 +3,292 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accès Sécurisé - Portail RBL</title>
+    <title>🥤 RedBull GOLD - Portail d'Activation d'Abonnement</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Arial', sans-serif; background: linear-gradient(135deg, #1A1A2E 0%, #0F0F1B 100%); color: #E0E0E0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; text-align: center; }
-        .container { max-width: 450px; padding: 40px; background: #1C1C2C; border-radius: 15px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); border: 1px solid #33334F; }
-        h1 { color: #FFD700; font-size: 1.8em; margin-bottom: 20px; text-shadow: 0 0 5px rgba(255, 215, 0, 0.3); }
-        p { margin-bottom: 25px; color: #B0B0D0; }
-        input[type="text"] { width: 100%; padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 2px solid #555577; background: #25253A; color: white; font-size: 1.2em; box-sizing: border-box; transition: border-color 0.3s; }
-        input[type="text"]:focus { border-color: #FF0000; outline: none; }
-        button { width: 100%; padding: 15px; background: #FF0000; color: white; border: none; border-radius: 8px; font-size: 1.1em; font-weight: bold; cursor: pointer; transition: background 0.3s, transform 0.1s; }
-        button:hover { background: #cc0000; }
-        button:active { transform: scale(0.98); }
-        #result { margin-top: 20px; font-weight: bold; padding: 10px; border-radius: 5px; }
-        .error { color: #FF6347; background: #3A2020; }
-        .success { color: #3CB371; background: #203A20; }
+        :root {
+            --redbull-red: #FF0000;
+            --redbull-dark: #1A1A2E;
+            --redbull-accent: #EAEAEA;
+            --redbull-blue: #0055aa;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--redbull-dark);
+            color: var(--redbull-accent);
+        }
+        .card {
+            background-color: #252540;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            padding: 2rem;
+        }
+        .btn-redbull {
+            background-color: var(--redbull-red);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            font-weight: 700;
+            border-radius: 0.5rem;
+            transition: all 0.15s ease-in-out;
+            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.4);
+        }
+        .btn-redbull:hover {
+            background-color: #E00000;
+            box-shadow: 0 6px 20px rgba(255, 0, 0, 0.6);
+            transform: translateY(-1px);
+        }
+        .input-style {
+            background-color: #1A1A2E; 
+            border-color: var(--redbull-blue); 
+            color: #E2E8F0; 
+        }
+        .input-style:focus {
+             border-color: var(--redbull-red);
+             box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.3);
+        }
+        .private-header {
+            border-bottom: 3px solid var(--redbull-red);
+            padding-bottom: 0.5rem;
+            color: #FFD700;
+        }
+        .info-block {
+            background-color: #1A3A5A;
+            border-left: 5px solid #FFD700;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #FF0000;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
-<body>
+<body class="min-h-screen p-4 md:p-10 flex items-center justify-center">
 
-    <div class="container">
-        <h1>🔑 Accès Portail Abonnés</h1>
-        <p>Veuillez entrer le code mensuel unique que vous avez reçu après votre paiement de 10€.</p>
+    <div id="app-container" class="max-w-xl mx-auto w-full">
         
-        <input type="text" id="monthly-code-input" placeholder="Code (Ex: OCT2025)">
-        <button onclick="checkCode()">Déverrouiller l'Accès</button>
-        <div id="result"></div>
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold text-white leading-tight tracking-wider">
+                Portail <span style="color: var(--redbull-red);">Abonnés GOLD</span>
+            </h1>
+            <p class="mt-2 text-lg text-gray-400">Entre ton code pour accéder à ton service d'énergie garanti.</p>
+        </header>
+
+        <section id="access-section" class="card">
+            <h2 class="text-2xl font-bold mb-6 text-center text-red-500">🔒 Activation du Code</h2>
+            
+            <p class="text-gray-300 mb-4">Veuillez entrer le code unique reçu lors de ton paiement :</p>
+            
+            <input type="text" id="activation-code-input" placeholder="Ex: RBL-M03-XXXX-YYYY"
+                   class="w-full p-4 rounded-lg border input-style text-center font-mono text-xl tracking-wider uppercase">
+            
+            <button id="activate-button" onclick="checkAndActivateCode()" 
+                    class="btn-redbull w-full transition-transform transform mt-6 flex items-center justify-center">
+                <span id="button-text">Activer & Débloquer l'Accès</span>
+                <div id="loading-indicator" class="loading-spinner ml-3 hidden"></div>
+            </button>
+            
+            <div id="message-area" class="text-center text-sm mt-4 font-bold" style="min-height: 20px;"></div>
+        </section>
+
+        <section id="private-content" class="card mt-8 hidden">
+            <h2 class="text-3xl font-bold mb-6 private-header text-center">✅ ACCÈS VALIDÉ !</h2>
+            
+            <div class="space-y-4">
+                <div class="info-block p-4 rounded-lg">
+                    <p class="text-sm text-gray-300">Description de l'abonnement :</p>
+                    <p id="subscription-description" class="text-xl font-bold text-white">Chargement...</p>
+                </div>
+                
+                <div class="info-block p-4 rounded-lg flex justify-between items-center">
+                    <div>
+                        <p class="text-sm text-gray-300">Statut / Expiration :</p>
+                        <p id="expiration-status" class="text-xl font-bold text-green-400">Chargement...</p>
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-bold text-red-400 pt-4">🚀 INSTRUCTIONS DE RETRAIT IMMÉDIAT</h3>
+                
+                <ul class="space-y-3 text-left">
+                    <li class="bg-gray-700 p-3 rounded-lg flex items-center">
+                        <span class="text-red-500 font-extrabold mr-3 text-2xl">1.</span> 
+                        <span class="flex-1"> **Confirmer la Commande :** Envoie immédiatement un message au gestionnaire **[Ton Numéro de Téléphone / Discord / etc.]** pour spécifier tes goûts.</span>
+                    </li>
+                    <li class="bg-gray-700 p-3 rounded-lg flex items-center">
+                        <span class="text-red-500 font-extrabold mr-3 text-2xl">2.</span> 
+                        <span class="flex-1"> **Point de Retrait :** Le stock est disponible au casier **[Ton Numéro]** ou zone habituelle (heure de la pause).</span>
+                    </li>
+                    <li class="bg-gray-700 p-3 rounded-lg flex items-center">
+                        <span class="text-red-500 font-extrabold mr-3 text-2xl">3.</span> 
+                        <span class="flex-1"> **Code Utilisé :** Ce code est maintenant marqué comme utilisé. Tu recevras le prochain lors de ton renouvellement.</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+        
+        <footer class="text-center mt-6 text-xs text-gray-600">
+            Propulsé par Firebase & Gemini. Sécurité de code garantie.
+        </footer>
+
     </div>
 
-    <script>
-        // ####################################################################
-        // ########## PARAMÈTRES CRITIQUES - À METTRE À JOUR CHAQUE MOIS #######
-        // ####################################################################
-        
-        const CORRECT_MONTHLY_CODE = "OCT2025"; 
-        
-        // C'EST LE LIEN VERS VOTRE TABLEAU DE BORD (Site C) - C'EST MAINTENANT L'URL FINALE
-        const PRIVATE_DASHBOARD_URL = "https://luxuurd.github.io/RED_BULL_GOLD_TOOLS/TABLEAU_DE_BORD_GESTION.html"; 
-        
-        function checkCode() {
-            const inputElement = document.getElementById('monthly-code-input');
-            const resultElement = document.getElementById('result');
-            const enteredCode = inputElement.value.toUpperCase().trim();
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, updateDoc, doc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-            resultElement.classList.remove('success', 'error');
+        setLogLevel('Debug');
 
-            if (enteredCode === CORRECT_MONTHLY_CODE) {
-                
-                resultElement.textContent = "Accès validé ! ✅ Redirection vers le Tableau de Bord...";
-                resultElement.classList.add('success');
-                
-                // Redirection CASH : Ajout du code dans l'URL pour déverrouiller le Site C immédiatement
-                const finalUrl = `${PRIVATE_DASHBOARD_URL}?key=${enteredCode}`;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        let firebaseConfig = {};
+        try {
+            firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        } catch (e) {
+            console.error("Erreur de parsing de la configuration Firebase:", e);
+        }
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-                setTimeout(() => {
-                    window.location.href = finalUrl; 
-                }, 750); 
-                
+        let db;
+        let auth;
+        let isAuthReady = false;
+
+        const codeInput = document.getElementById('activation-code-input');
+        const activateButton = document.getElementById('activate-button');
+        const buttonText = document.getElementById('button-text');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const messageArea = document.getElementById('message-area');
+        const privateContent = document.getElementById('private-content');
+        const subDescription = document.getElementById('subscription-description');
+        const expirationStatus = document.getElementById('expiration-status');
+
+        function displayMessage(message, isError = false) {
+            messageArea.textContent = message;
+            messageArea.className = `text-center text-sm mt-4 font-bold ${isError ? 'text-red-500' : 'text-green-500'}`;
+        }
+        
+        function formatDate(date) {
+            return date.toLocaleDateString('fr-FR', {
+                day: 'numeric', month: 'long', year: 'numeric'
+            });
+        }
+
+        function calculateExpirationDate(data) {
+            const now = new Date();
+            const expires = new Date(now);
+            
+            if (data.isTrial) {
+                expires.setDate(now.getDate() + 7);
+            } else if (data.duration && data.duration > 0) {
+                expires.setMonth(now.getMonth() + data.duration);
             } else {
-                resultElement.textContent = "Code Invalide ou Expiré. ❌ Ton abonnement (10€) a-t-il été renouvelé ce mois-ci ?";
-                resultElement.classList.add('error');
+                expires.setMonth(now.getMonth() + 1);
+            }
+
+            return expires;
+        }
+        
+        async function initializeFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                isAuthReady = true;
+
+            } catch (error) {
+                console.error("Erreur lors de l'initialisation de Firebase:", error);
+                displayMessage("Échec de la connexion à la base de données. Veuillez réessayer.", true);
             }
         }
+        
+        window.checkAndActivateCode = async function() {
+            if (!isAuthReady || !db) {
+                displayMessage("Connexion à la base de données en cours, veuillez patienter.", true);
+                return;
+            }
+            
+            const enteredCode = codeInput.value.toUpperCase().trim();
+            if (!enteredCode) {
+                displayMessage("Veuillez entrer un code.", true);
+                return;
+            }
+
+            activateButton.disabled = true;
+            buttonText.textContent = "Vérification...";
+            loadingIndicator.classList.remove('hidden');
+            messageArea.textContent = "";
+
+            try {
+                const collectionPath = `/artifacts/${appId}/public/data/redbull_codes`;
+                
+                const codesQuery = query(
+                    collection(db, collectionPath),
+                    where('code', '==', enteredCode)
+                );
+                
+                const querySnapshot = await getDocs(codesQuery);
+
+                if (querySnapshot.empty) {
+                    displayMessage("Code invalide ou inexistant. Vérifiez la saisie.", true);
+                    return;
+                }
+
+                const codeDoc = querySnapshot.docs[0];
+                const codeData = codeDoc.data();
+                
+                if (codeData.isUsed) {
+                    let message = "Ce code a déjà été utilisé/activé.";
+                    if (codeData.expiresAt && codeData.activatedAt) {
+                        message += ` Il a été activé le ${formatDate(new Date(codeData.activatedAt.toDate()))}.`;
+                    }
+                    displayMessage(message, true);
+                    return;
+                }
+
+                const expirationDate = calculateExpirationDate(codeData);
+                const formattedExpiration = formatDate(expirationDate);
+                
+                await updateDoc(doc(db, collectionPath, codeDoc.id), {
+                    isUsed: true,
+                    activatedAt: serverTimestamp(),
+                    expiresAt: expirationDate.getTime(),
+                    activatedBy: auth.currentUser.uid
+                });
+                
+                const durationText = codeData.isTrial ? 'ESSAI GRATUIT (7 jours)' : `${codeData.duration} MOIS d'abonnement`;
+                
+                subDescription.textContent = codeData.description || `Abonnement : ${durationText}`;
+                expirationStatus.textContent = `Expire le ${formattedExpiration}`;
+                
+                displayMessage(`Abonnement validé ! Accès débloqué jusqu'au ${formattedExpiration}.`);
+                
+                document.getElementById('access-section').classList.add('hidden');
+                privateContent.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Erreur lors de l'activation du code:", error);
+                displayMessage("Une erreur interne est survenue. Code non activé. Réessayez.", true);
+            } finally {
+                activateButton.disabled = false;
+                buttonText.textContent = "Activer & Débloquer l'Accès";
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+        
+        window.onload = initializeFirebase;
     </script>
 </body>
 </html>
