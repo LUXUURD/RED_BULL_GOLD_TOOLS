@@ -160,6 +160,278 @@
 
         // =================================================================
         // 🔑 VOS CONFIGURATIONS FIREBASE FINALES 🔑
+        // CLÉS RÉELLES À REMPLACER ICI
+        // =================================================================
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyCOJzc9JW6Jb4yVbIRtSHtTSCBnXRwBVQg", // REMPLACER
+            authDomain: "redbull-generateur.firebaseapp.com", // REMPLACER
+            projectId: "redbull-generateur", // REMPLACER
+            storageBucket: "redbull-generateur.firebasestorage.app", // REMPLACER
+            messagingSenderId: "571773020357", // REMPLACER
+            appId: "1:571773020357:web:9bfa70ee5160c51f2168ac" // REMPLACER
+        };
+        const ADMIN_PASSWORD = 'Adammouza777'; 
+        const APP_ID = FIREBASE_CONFIG.projectId || 'redbull-gold-app'; 
+        // =================================================================
+
+        let db;
+        let auth;
+        let isAuthReady = false;
+
+        const generateButton = document.getElementById('generate-button');
+        const buttonText = document.getElementById('button-text');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const messageArea = document.getElementById('message-area');
+        const resultArea = document.getElementById('result-area');
+        const lockScreen = document.getElementById('password-lock-screen');
+        const lockMessage = document.getElementById('lock-message');
+        const passwordInput = document.getElementById('admin-password-input');
+
+        function displayMessage(message, isError = false) {
+            messageArea.textContent = message;
+            messageArea.className = `text-center text-sm mt-4 font-bold ${isError ? 'text-red-500' : 'text-green-500'}`;
+        }
+
+        function generateUniqueCode(duration, isTrial) {
+            const prefix = 'RBL';
+            const durationPart = isTrial ? 'T07' : `M${String(duration).padStart(2, '0')}`;
+            const randomPart1 = Math.random().toString(36).substring(2, 6).toUpperCase();
+            const randomPart2 = Math.random().toString(36).substring(2, 6).toUpperCase();
+            return `${prefix}-${durationPart}-${randomPart1}-${randomPart2}`;
+        }
+        
+        // Logique de vérification du mot de passe
+        window.checkPassword = function() {
+            const enteredPassword = passwordInput.value.trim();
+            if (enteredPassword === ADMIN_PASSWORD) {
+                lockScreen.style.display = 'none';
+                displayMessage("Connexion à la base de données en cours...", false);
+                passwordInput.removeEventListener('keydown', handleKeydown);
+                initializeFirebase(); // Initialise Firebase UNIQUEMENT après déverrouillage
+            } else {
+                lockMessage.textContent = "Mot de passe incorrect. Veuillez réessayer.";
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        }
+
+        // Permet de soumettre avec la touche Entrée
+        function handleKeydown(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault(); 
+                window.checkPassword();
+            }
+        }
+
+        // Ajout de l'écouteur d'événement pour la touche Entrée
+        passwordInput.addEventListener('keydown', handleKeydown);
+
+        async function initializeFirebase() {
+            try {
+                const app = initializeApp(FIREBASE_CONFIG);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // Connexion anonyme requise pour l'utilisation des règles de sécurité Firestore
+                await signInAnonymously(auth);
+                isAuthReady = true;
+                generateButton.disabled = false;
+                displayMessage("Prêt à générer des codes !", false);
+
+
+            } catch (error) {
+                console.error("Erreur lors de l'initialisation de Firebase:", error);
+                displayMessage("Échec de la connexion. Vérifiez vos clés Firebase ou votre connexion internet.", true);
+                generateButton.disabled = true;
+            }
+        }
+        
+        window.generateAndSaveCode = async function() {
+            if (!isAuthReady || !db) {
+                 displayMessage("Base de données non initialisée ou en cours de connexion.", true);
+                 return;
+            }
+
+            generateButton.disabled = true;
+            buttonText.textContent = "Génération...";
+            loadingIndicator.classList.remove('hidden');
+            messageArea.textContent = "";
+            resultArea.classList.add('hidden');
+
+            try {
+                const durationInput = document.getElementById('duration');
+                const isTrialCheckbox = document.getElementById('is-trial');
+                const descriptionInput = document.getElementById('description');
+
+                const isTrial = isTrialCheckbox.checked;
+                const duration = isTrial ? 0 : parseInt(durationInput.value, 10);
+                const description = descriptionInput.value.trim();
+
+                const newCode = generateUniqueCode(duration, isTrial);
+                // Chemin de la collection : /artifacts/{APP_ID}/public/data/redbull_codes
+                const collectionPath = `/artifacts/${APP_ID}/public/data/redbull_codes`;
+                
+                const codeData = {
+                    code: newCode,
+                    duration: duration, 
+                    isTrial: isTrial,
+                    description: description,
+                    isUsed: false,
+                    createdAt: serverTimestamp(),
+                    activatedAt: null,
+                    expiresAt: null
+                };
+
+                await addDoc(collection(db, collectionPath), codeData);
+
+                resultArea.textContent = `Code généré : ${newCode}`;
+                resultArea.classList.remove('hidden');
+                displayMessage("Code généré et sauvegardé avec succès dans la base de données publique !", false);
+
+            } catch (error) {
+                console.error("Erreur lors de la sauvegarde du code:", error);
+                // Si vous voyez une erreur ici, vérifiez vos Règles de Sécurité (Permission Denied)
+                displayMessage(`Erreur lors de la sauvegarde: ${error.message}. Vérifiez vos Règles de Sécurité Firestore.`, true);
+            } finally {
+                generateButton.disabled = false;
+                buttonText.textContent = "GÉNÉRER ET SAUVEGARDER LE CODE";
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+
+        // Initialisation de la vérification du mot de passe au chargement
+        window.onload = function() {
+            document.getElementById('unlock-button').disabled = false;
+            passwordInput.focus();
+        };
+    </script>
+</body>
+</html>            background-color: #00B8D9;
+            box-shadow: 0 6px 20px rgba(4, 217, 255, 0.6);
+            transform: translateY(-1px);
+        }
+        .input-style {
+            background-color: #1A1A2E; 
+            border-color: #3B82F6; 
+            color: #E2E8F0; 
+        }
+        .input-style:focus {
+             border-color: #04D9FF;
+             box-shadow: 0 0 0 3px rgba(4, 217, 255, 0.3);
+        }
+        /* Style pour l'écran de verrouillage */
+        #password-lock-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(5px);
+            z-index: 20;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .lock-card {
+            background-color: #1A1A2E;
+            border: 3px solid var(--redbull-red);
+            max-width: 400px;
+            text-align: center;
+        }
+        .btn-unlock {
+            background-color: var(--redbull-red);
+            color: white;
+            font-weight: 700;
+            transition: background-color 0.2s;
+        }
+        .btn-unlock:hover {
+            background-color: #E00000;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #FF0000;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-10 flex items-center justify-center">
+
+    <div id="password-lock-screen">
+        <div class="lock-card p-8 rounded-xl shadow-2xl">
+            <h2 class="text-3xl font-extrabold mb-4 text-white">🔒 Accès Administrateur</h2>
+            <p class="text-gray-400 mb-6">Veuillez entrer le mot de passe pour déverrouiller le générateur de codes.</p>
+            <input type="password" id="admin-password-input" placeholder="Mot de passe"
+                   class="w-full p-3 rounded-lg border input-style mb-4 text-center">
+            <button onclick="checkPassword()" id="unlock-button"
+                    class="btn-unlock w-full py-3 rounded-lg text-lg">
+                Déverrouiller
+            </button>
+            <p id="lock-message" class="text-sm mt-3 font-bold" style="min-height: 20px; color: yellow;"></p>
+        </div>
+    </div>
+    
+    <div id="app-container" class="max-w-xl mx-auto w-full">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-extrabold text-white leading-tight tracking-wider">
+                ADMIN : <span style="color: #04D9FF;">Générateur de Codes GOLD</span>
+            </h1>
+            <p class="mt-2 text-md text-gray-400">Outil de création et suivi des abonnements clients.</p>
+        </header>
+
+        <section id="generator-card" class="card relative">
+            <h2 class="text-2xl font-bold mb-6 text-center text-red-500">⚙️ Paramètres du Code</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label for="duration" class="block mb-2 text-sm font-medium text-gray-400">Durée de l'abonnement (Mois, ex: 3 pour 3 mois)</label>
+                    <input type="number" id="duration" value="1" min="1" max="12"
+                           class="w-full p-3 rounded-lg border input-style">
+                </div>
+                
+                <div class="flex items-center">
+                    <input type="checkbox" id="is-trial" class="h-5 w-5 text-red-600 bg-gray-700 border-gray-600 rounded focus:ring-red-500">
+                    <label for="is-trial" class="ml-2 text-sm font-medium text-gray-400">Marquer comme Code d'Essai (7 jours, remplace la durée)</label>
+                </div>
+                
+                <div>
+                    <label for="description" class="block mb-2 text-sm font-medium text-gray-400">Description (ex: "Abonnement Standard" ou "Gout Fraise")</label>
+                    <input type="text" id="description" value="Abonnement Mensuel Standard"
+                           class="w-full p-3 rounded-lg border input-style">
+                </div>
+                
+                <button id="generate-button" onclick="generateAndSaveCode()" 
+                        class="btn-generate w-full transition-transform transform mt-6 flex items-center justify-center">
+                    <span id="button-text">GÉNÉRER ET SAUVEGARDER LE CODE</span>
+                    <div id="loading-indicator" class="loading-spinner ml-3 hidden"></div>
+                </button>
+            </div>
+            
+            <div id="result-area" class="mt-6 p-4 bg-gray-700 rounded-lg text-center font-mono text-lg break-all hidden">
+                </div>
+            
+            <div id="message-area" class="text-center text-sm mt-4 font-bold" style="min-height: 20px;"></div>
+        </section>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // setLogLevel('Debug'); // Décommenter ceci si vous avez besoin de voir les logs de Firebase dans la console
+
+        // =================================================================
+        // 🔑 VOS CONFIGURATIONS FIREBASE FINALES 🔑
         // Clés copiées de votre console Firebase (redbull-generateur)
         // =================================================================
         const FIREBASE_CONFIG = {
