@@ -123,6 +123,280 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, query, where, getDocs, updateDoc, doc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // setLogLevel('Debug'); // Décommenter ceci si vous avez besoin de voir les logs de Firebase dans la console
+
+        // =================================================================
+        // 🔑 VOS CONFIGURATIONS FIREBASE FINALES 🔑
+        // Clés copiées de votre console Firebase (redbull-generateur)
+        // =================================================================
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyCOJzc9JW6Jb4yVbIRtSHtTSCBnXRwBVQg", 
+            authDomain: "redbull-generateur.firebaseapp.com", 
+            projectId: "redbull-generateur", 
+            storageBucket: "redbull-generateur.firebasestorage.app", 
+            messagingSenderId: "571773020357",
+            appId: "1:571773020357:web:9bfa70ee5160c51f2168ac"
+        };
+        const APP_ID = FIREBASE_CONFIG.projectId || 'redbull-gold-app'; 
+        // =================================================================
+
+        let db;
+        let auth;
+        let isAuthReady = false;
+
+        const activateButton = document.getElementById('activate-button');
+        const buttonText = document.getElementById('button-text');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const messageArea = document.getElementById('message-area');
+        const codeInput = document.getElementById('activation-code-input');
+        const accessSection = document.getElementById('access-section');
+        const portalContent = document.getElementById('portal-content');
+
+        function displayMessage(message, isError = false) {
+            messageArea.textContent = message;
+            messageArea.className = `text-center text-sm mt-4 font-bold ${isError ? 'text-red-500' : 'text-green-500'}`;
+        }
+        
+        // Convertit un timestamp Firebase en date lisible
+        function formatDate(timestamp) {
+            if (!timestamp) return 'Non défini';
+            // Gère les objets Timestamp de Firebase et les timestamps numériques
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp); 
+            return date.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function calculateExpiration(isTrial, durationMonths) {
+            const now = new Date();
+            let expirationDate = new Date(now);
+
+            if (isTrial) {
+                // 7 jours d'essai
+                expirationDate.setDate(now.getDate() + 7);
+            } else {
+                // Nombre de mois
+                expirationDate.setMonth(now.getMonth() + durationMonths);
+            }
+            return expirationDate;
+        }
+
+        async function initializeFirebase() {
+            try {
+                const app = initializeApp(FIREBASE_CONFIG);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // Connexion anonyme requise pour l'utilisation des règles de sécurité Firestore
+                await signInAnonymously(auth);
+                isAuthReady = true;
+                activateButton.disabled = false;
+                activateButton.classList.remove('opacity-70');
+                buttonText.textContent = "Activer & Débloquer l'Accès";
+                displayMessage("Prêt à activer le code !", false);
+            } catch (error) {
+                console.error("Erreur lors de l'initialisation de Firebase:", error);
+                displayMessage("Échec de la connexion à la base de données. Vérifiez vos clés Firebase ou les règles de sécurité.", true);
+                activateButton.disabled = true;
+            }
+        }
+        
+        window.checkAndActivateCode = async function() {
+            if (!isAuthReady || !db) {
+                 displayMessage("Connexion à la base de données en cours...", true);
+                 return;
+            }
+
+            const enteredCode = codeInput.value.trim().toUpperCase();
+            if (enteredCode === "") {
+                displayMessage("Veuillez entrer votre code.", true);
+                return;
+            }
+
+            activateButton.disabled = true;
+            buttonText.textContent = "Vérification...";
+            loadingIndicator.classList.remove('hidden');
+            messageArea.textContent = "";
+
+            try {
+                const collectionPath = `/artifacts/${APP_ID}/public/data/redbull_codes`;
+                const codesRef = collection(db, collectionPath);
+                
+                // Recherche du code
+                const q = query(codesRef, where('code', '==', enteredCode));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    displayMessage("Erreur: Ce code n'existe pas ou n'est pas valide.", true);
+                    return;
+                }
+
+                const docSnapshot = querySnapshot.docs[0];
+                const codeData = docSnapshot.data();
+
+                if (codeData.isUsed) {
+                    // Si déjà utilisé, afficher les infos d'abonnement existantes
+                    showActivePortal(codeData, enteredCode);
+                    displayMessage(`Ce code a déjà été activé le ${formatDate(codeData.activatedAt)}.`, false);
+                    return;
+                }
+                
+                // --- Le code est valide et non utilisé, nous l'activons ---
+                
+                const duration = codeData.duration;
+                const isTrial = codeData.isTrial;
+                const expirationDate = calculateExpiration(isTrial, duration);
+
+                const updatePayload = {
+                    isUsed: true,
+                    activatedAt: serverTimestamp(),
+                    expiresAt: expirationDate.getTime() // Stocke le timestamp en millisecondes
+                };
+
+                // Mise à jour du document dans Firestore
+                await updateDoc(docSnapshot.ref, updatePayload);
+                
+                // Mise à jour de l'objet de données local pour l'affichage
+                codeData.isUsed = true;
+                codeData.activatedAt = new Date(); // Utilise la date locale pour l'affichage immédiat
+                codeData.expiresAt = expirationDate.getTime();
+                
+                showActivePortal(codeData, enteredCode);
+                displayMessage("SUCCÈS ! Votre abonnement RedBull GOLD est maintenant actif !", false);
+
+            } catch (error) {
+                console.error("Erreur lors de la vérification/activation:", error);
+                // Si vous voyez une erreur ici, vérifiez vos Règles de Sécurité (Permission Denied)
+                displayMessage(`Erreur de connexion : ${error.message}. Vérifiez vos Règles de Sécurité Firestore.`, true);
+            } finally {
+                activateButton.disabled = false;
+                buttonText.textContent = "Activer & Débloquer l'Accès";
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+        
+        function showActivePortal(codeData, enteredCode) {
+            // Masquer la section d'accès
+            accessSection.classList.add('hidden');
+            
+            // Afficher la section du contenu du portail
+            portalContent.classList.remove('hidden');
+
+            const expirationDate = new Date(codeData.expiresAt);
+            const statusText = codeData.expiresAt > Date.now() ? 'ACTIF' : 'EXPIRÉ';
+            const statusColor = codeData.expiresAt > Date.now() ? 'text-green-400' : 'text-red-400';
+
+            // Mettre à jour les informations
+            document.getElementById('abo-status').textContent = statusText;
+            document.getElementById('abo-status').className = `font-mono text-xl ${statusColor}`;
+            
+            document.getElementById('used-code').textContent = enteredCode;
+            document.getElementById('code-description').textContent = codeData.description || "N/A";
+            document.getElementById('activation-date').textContent = formatDate(codeData.activatedAt);
+            document.getElementById('expiration-date').textContent = formatDate(expirationDate);
+            
+            // Masquer le message de statut
+            messageArea.textContent = "";
+        }
+
+        window.resetPortal = function() {
+            accessSection.classList.remove('hidden');
+            portalContent.classList.add('hidden');
+            codeInput.value = "";
+            displayMessage("Veuillez entrer un nouveau code si nécessaire.", false);
+        }
+
+        // Initialisation au chargement
+        window.onload = initializeFirebase;
+    </script>
+</body>
+</html>            background-color: #E00000;
+            box-shadow: 0 6px 20px rgba(255, 0, 0, 0.6);
+            transform: translateY(-1px);
+        }
+        .input-style {
+            background-color: #1A1A2E; 
+            border-color: var(--redbull-blue); 
+            color: #E2E8F0; 
+        }
+        .input-style:focus {
+             border-color: var(--redbull-red);
+             box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.3);
+        }
+        .private-header {
+            border-bottom: 3px solid var(--redbull-red);
+            padding-bottom: 0.5rem;
+            color: #FFD700;
+        }
+        .info-block {
+            background-color: #1A3A5A;
+            border-left: 5px solid #FFD700;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #FF0000;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-10 flex items-center justify-center">
+
+    <div id="app-container" class="max-w-xl mx-auto w-full">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold text-white leading-tight tracking-wider">
+                Portail <span style="color: var(--redbull-red);">Abonnés GOLD</span>
+            </h1>
+            <p class="mt-2 text-lg text-gray-400">Entre ton code pour accéder à ton service d'énergie garanti.</p>
+        </header>
+
+        <section id="access-section" class="card">
+            <h2 class="text-2xl font-bold mb-6 text-center text-red-500">🔒 Activation du Code</h2>
+            
+            <p class="text-gray-300 mb-4">Veuillez entrer le code unique reçu lors de ton paiement :</p>
+            
+            <input type="text" id="activation-code-input" placeholder="Ex: RBL-M03-XXXX-YYYY"
+                   class="w-full p-4 rounded-lg border input-style text-center font-mono text-xl tracking-wider uppercase">
+            
+            <button id="activate-button" onclick="checkAndActivateCode()" disabled
+                    class="btn-redbull w-full transition-transform transform mt-6 flex items-center justify-center opacity-70">
+                <span id="button-text">Connexion à la base de données...</span>
+                <div id="loading-indicator" class="loading-spinner ml-3 hidden"></div>
+            </button>
+            
+            <div id="message-area" class="text-center text-sm mt-4 font-bold" style="min-height: 20px;"></div>
+        </section>
+
+        <section id="portal-content" class="card mt-8 hidden">
+            <h2 class="text-3xl font-extrabold mb-6 private-header">🚀 ACCÈS GOLD ACTIF</h2>
+            
+            <div id="status-info" class="space-y-4 text-sm">
+                <div class="info-block p-4 rounded-lg">
+                    <p class="font-bold text-lg text-yellow-300">Statut Abonnement : <span id="abo-status" class="font-mono text-xl">ACTIF</span></p>
+                </div>
+                <div class="info-block p-4 rounded-lg">
+                    <p><span class="font-bold text-gray-300">Code Utilisé :</span> <span id="used-code" class="font-mono break-all text-red-400"></span></p>
+                    <p><span class="font-bold text-gray-300">Description :</span> <span id="code-description" class="text-yellow-100"></span></p>
+                    <p><span class="font-bold text-gray-300">Activation :</span> <span id="activation-date"></span></p>
+                    <p><span class="font-bold text-gray-300">Expiration :</span> <span id="expiration-date"></span></p>
+                </div>
+            </div>
+
+            <button onclick="resetPortal()" class="btn-redbull w-full mt-6 bg-gray-600 hover:bg-gray-700">Déconnecter le Portail</button>
+        </section>
+        
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, updateDoc, doc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
         setLogLevel('Debug');
 
         // =================================================================
@@ -705,4 +979,5 @@
     </script>
 </body>
 </html>
+
 
